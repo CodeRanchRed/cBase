@@ -536,33 +536,37 @@ function cBase.SendNotification(src, text, notificationType, timer)
 end
 
 
-function cBase.RegisterUsableItem(itemName, callback)
+function cBase.RegisterUsableItem(itemName, cb)
     if not itemName then
         return cBase.Log("The item name parameter has not been provided!", "error")
-    end
-    if not callback then
-        return cBase.Log("The callback parameter has not been provided!", "error")
     end
     if not cBase.framework then
         return cBase.Log("The framework object has not been provided! (unknown framework)", "error")
     end
 
-    local frameworkObject = cBase.framework_obj
     if cBase.framework == "redemrp" then
-        exports.redemrp_inventory:registerUsableItem(itemName, function(data)
-            callback(data)
+        AddEventHandler("redemrp_inventory:useItem:" .. itemName, function(src)
+            cb(src)
         end)
     elseif cBase.framework == "vorp" then
         exports.vorp_inventory:registerUsableItem(itemName, function(data)
-            callback(data)
-        end, GetCurrentResourceName())
+            cb(data.source or data)
+        end)
     elseif cBase.framework == "qbrcore" then
-        exports['qbr-core']:CreateUsableItem(itemName, function(source, item)
-            callback({ source = source, item = item })
+        local QBCore = exports['qbr-core']:GetCoreObject()
+        QBCore.Functions.CreateUseableItem(itemName, function(src)
+            cb(src)
         end)
     elseif cBase.framework == "rsg" then
-        frameworkObject.Functions.CreateUsableItem(itemName, function(source, item)
-            callback({ source = source, item = item })
+        local frameworkObject = cBase.framework_obj
+        frameworkObject.Functions.CreateUseableItem(itemName, function(src)
+            cb(src)
         end)
     end
+
+    cBase.Log("Registered usable item: " .. tostring(itemName), "success")
 end
+
+exports("RegisterUsableItem", function(itemName, cb)
+    return cBase.RegisterUsableItem(itemName, cb)
+end)
