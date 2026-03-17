@@ -36,10 +36,8 @@ end
 exports("GetBase", GetBase)
 exports("GetLangPreference", LangPreference)
 
--- RegisterCommand("testwebhook", function()
---     exports['cBase']:SendLog("test", "Transfer completed", "green", "Bank Transaction", {
---         { name = "Player", value = "John Doe", inline = true },
---         { name = "Amount", value = "$5000",    inline = true },
---     })
-
--- end)
+exports["cBase"]:RegisterMethod("cBase:GetFramework", function(params, source, ret)
+    ret({
+        framework = cBase.framework
+    })
+end)

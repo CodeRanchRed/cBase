@@ -29,8 +29,8 @@ function cBase.GetUserIdentifier(src)
         return Player.identifier
     elseif cBase.framework == "vorp" then
         local Player = frameworkObject.getUser(src)
-        local character = user.getUsedCharacter
-        return character.charIdentifier
+        local character = Player.getUsedCharacter
+        return character.identifier
     elseif cBase.framework == "qbrcore" then
         local Player = exports['qbr-core']:GetPlayer(src)
         return Player.PlayerData.citizenid
@@ -40,9 +40,50 @@ function cBase.GetUserIdentifier(src)
     end
 end
 
+local _charIdCache = {} -- [source] = charIdentifier
+local _charNameCache = {} -- [source] = fullname
+
+AddEventHandler("vorp:SelectedCharacter", function(source, character)
+    if source and character then
+        if character.charIdentifier then
+            _charIdCache[source] = character.charIdentifier
+        end
+        if character.firstname and character.lastname then
+            _charNameCache[source] = character.firstname .. " " .. character.lastname
+        end
+    end
+end)
+
+AddEventHandler("playerDropped", function()
+    _charIdCache[source] = nil
+    _charNameCache[source] = nil
+end)
+
+function cBase.GetUserCharIdentifier(src)
+    if not src then
+        return cBase.Log("The user source parameter has not been provided!", "error")
+    end
+    if _charIdCache[src] then
+        return _charIdCache[src]
+    end
+    if not cBase.framework then
+        return cBase.Log("The framework object has not been provided! (unknown framework)", "error")
+    end
+    local frameworkObject = cBase.framework_obj
+    if cBase.framework == "vorp" then
+        local Player = frameworkObject.getUser(src)
+        local character = Player.getUsedCharacter
+        return character.charIdentifier
+    end
+    return 1
+end
+
 function cBase.GetUserFullName(src)
     if not src then
         return cBase.Log("The user source parameter has not been provided!", "error")
+    end
+    if _charNameCache[src] then
+        return _charNameCache[src]
     end
     if not cBase.framework then
         return cBase.Log("The framework object has not been provided! (unknown framework)", "error")
@@ -495,3 +536,33 @@ function cBase.SendNotification(src, text, notificationType, timer)
 end
 
 
+function cBase.RegisterUsableItem(itemName, callback)
+    if not itemName then
+        return cBase.Log("The item name parameter has not been provided!", "error")
+    end
+    if not callback then
+        return cBase.Log("The callback parameter has not been provided!", "error")
+    end
+    if not cBase.framework then
+        return cBase.Log("The framework object has not been provided! (unknown framework)", "error")
+    end
+
+    local frameworkObject = cBase.framework_obj
+    if cBase.framework == "redemrp" then
+        exports.redemrp_inventory:registerUsableItem(itemName, function(data)
+            callback(data)
+        end)
+    elseif cBase.framework == "vorp" then
+        exports.vorp_inventory:registerUsableItem(itemName, function(data)
+            callback(data)
+        end, GetCurrentResourceName())
+    elseif cBase.framework == "qbrcore" then
+        exports['qbr-core']:CreateUsableItem(itemName, function(source, item)
+            callback({ source = source, item = item })
+        end)
+    elseif cBase.framework == "rsg" then
+        frameworkObject.Functions.CreateUsableItem(itemName, function(source, item)
+            callback({ source = source, item = item })
+        end)
+    end
+end
