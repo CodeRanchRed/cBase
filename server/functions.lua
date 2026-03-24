@@ -570,3 +570,19 @@ end
 exports("RegisterUsableItem", function(itemName, cb)
     return cBase.RegisterUsableItem(itemName, cb)
 end)
+
+
+exports("OnPlayerDeath", function(cb)
+    AddEventHandler("vorpCore:playerDeath", function()
+        cb(source)
+    end)
+    AddEventHandler("redemrp:playerDied", function()
+        cb(source)
+    end)
+    AddEventHandler("rsg-ambulancejob:server:SetDeathStatus", function(src, isDead)
+        if isDead then cb(src) end
+    end)
+    AddEventHandler("qbrcore:server:setDeadStatus", function(src, isDead)
+        if isDead then cb(src) end
+    end)
+end)
