@@ -34,7 +34,8 @@ Config.DiscordLog = {
     --     }, "https://example.com/screenshot.png")
     --
     Webhooks = {
-        ["market"]       = "https://discord.com/api/webhooks/..."
+        ["market"] = "https://discord.com/api/webhooks/...",
+        ["deaths"] = "https://discord.com/api/webhooks/YOUR_WEBHOOK_HERE"
     },
 
     -- Bot appearance
