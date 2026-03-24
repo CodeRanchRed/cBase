@@ -571,6 +571,128 @@ exports("RegisterUsableItem", function(itemName, cb)
     return cBase.RegisterUsableItem(itemName, cb)
 end)
 
+local _deadCache = {}
+
+AddEventHandler("vorpCore:playerDeath", function()
+    _deadCache[source] = true
+end)
+
+AddEventHandler("redemrp:playerDied", function()
+    _deadCache[source] = true
+end)
+
+AddEventHandler("rsg-ambulancejob:server:SetDeathStatus", function(src, isDead)
+    _deadCache[src] = isDead
+end)
+
+AddEventHandler("qbrcore:server:setDeadStatus", function(src, isDead)
+    _deadCache[src] = isDead
+end)
+
+AddEventHandler("vorp_core:Server:OnPlayerRevive", function(src)
+    _deadCache[src] = false
+end)
+
+AddEventHandler("playerDropped", function()
+    _deadCache[source] = nil
+end)
+
+
+function cBase.IsPlayerDead(src)
+    if not src then
+        return cBase.Log("The user source parameter has not been provided!", "error")
+    end
+    if _deadCache[src] ~= nil then
+        return _deadCache[src]
+    end
+    if not cBase.framework then
+        return cBase.Log("The framework object has not been provided! (unknown framework)", "error")
+    end
+    local frameworkObject = cBase.framework_obj
+    if cBase.framework == "redemrp" then
+        local Player = frameworkObject.GetPlayer(src)
+        return Player and Player.isdead or false
+    elseif cBase.framework == "vorp" then
+        local Player = frameworkObject.getUser(src)
+        if not Player then return false end
+        local character = Player.getUsedCharacter
+        return character and character.isdead or false
+    elseif cBase.framework == "qbrcore" then
+        local Player = exports['qbr-core']:GetPlayer(src)
+        return Player and Player.PlayerData.metadata.isdead or false
+    elseif cBase.framework == "rsg" then
+        local Player = frameworkObject.Functions.GetPlayer(src)
+        return Player and Player.PlayerData.metadata.isdead or false
+    end
+    return false
+end
+
+
+function cBase.RevivePlayer(src)
+    if not src then
+        return cBase.Log("The user source parameter has not been provided!", "error")
+    end
+    if not cBase.framework then
+        return cBase.Log("The framework object has not been provided! (unknown framework)", "error")
+    end
+    local frameworkObject = cBase.framework_obj
+    if cBase.framework == "redemrp" then
+        TriggerClientEvent("redemrp:revivePlayer", src)
+        _deadCache[src] = false
+    elseif cBase.framework == "vorp" then
+        local Core = exports.vorp_core:GetCore()
+        Core.Player.Revive(src)
+        _deadCache[src] = false
+    elseif cBase.framework == "qbrcore" then
+        local Player = exports['qbr-core']:GetPlayer(src)
+        if Player then
+            Player.Functions.SetMetaData("isdead", false)
+            Player.Functions.SetMetaData("inlaststand", false)
+            TriggerClientEvent("hospital:client:Revive", src)
+            _deadCache[src] = false
+        end
+    elseif cBase.framework == "rsg" then
+        local RSGCore = frameworkObject
+        RSGCore.Player.Revive(src)
+        _deadCache[src] = false
+    end
+    cBase.Log("Revived player: " .. tostring(src), "success")
+end
+
+
+function cBase.HealPlayer(src)
+    if not src then
+        return cBase.Log("The user source parameter has not been provided!", "error")
+    end
+    if not cBase.framework then
+        return cBase.Log("The framework object has not been provided! (unknown framework)", "error")
+    end
+    local frameworkObject = cBase.framework_obj
+    if cBase.framework == "redemrp" then
+        TriggerClientEvent("redemrp:healPlayer", src)
+    elseif cBase.framework == "vorp" then
+        local Core = exports.vorp_core:GetCore()
+        Core.Player.Heal(src)
+    elseif cBase.framework == "qbrcore" then
+        TriggerClientEvent("hospital:client:Heal", src)
+    elseif cBase.framework == "rsg" then
+        local RSGCore = frameworkObject
+        RSGCore.Player.Heal(src)
+    end
+    cBase.Log("Healed player: " .. tostring(src), "success")
+end
+
+exports("IsPlayerDead", function(src)
+    return cBase.IsPlayerDead(src)
+end)
+
+exports("RevivePlayer", function(src)
+    return cBase.RevivePlayer(src)
+end)
+
+exports("HealPlayer", function(src)
+    return cBase.HealPlayer(src)
+end)
 
 exports("OnPlayerDeath", function(cb)
     AddEventHandler("vorpCore:playerDeath", function()
