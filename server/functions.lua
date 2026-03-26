@@ -559,8 +559,15 @@ function cBase.RegisterUsableItem(itemName, cb)
         end)
     elseif cBase.framework == "rsg" then
         local frameworkObject = cBase.framework_obj
-        frameworkObject.Functions.CreateUseableItem(itemName, function(src)
-            cb(src)
+        frameworkObject.Functions.CreateUseableItem(itemName, function(src, item)
+            local resolvedSrc = src
+            if type(src) == "table" then
+                resolvedSrc = src.source
+            end
+            if not resolvedSrc then
+                return cBase.Log("RSG usable item callback got no source for: " .. tostring(itemName), "error")
+            end
+            cb(resolvedSrc)
         end)
     end
 
